@@ -155,11 +155,60 @@ QUESTIONS:
 The output of facility name and total revenue, sorted by revenue. Remember
 that there's a different cost for guests and members! */
 
+q10_query = """SELECT sub.name, SUM( sub.revenue ) AS revenue
+FROM (
+SELECT b.facid, b.memid, f.name, f.guestcost, f.membercost, COUNT( b.facid ) AS facid_count,
+CASE
+WHEN b.memid =0
+THEN COUNT( b.facid ) * f.guestcost
+ELSE COUNT( b.facid ) * f.membercost
+END AS 'revenue'
+FROM Bookings AS b
+LEFT JOIN Facilities AS f ON b.facid = f.facid
+GROUP BY b.facid, b.memid
+) AS sub
+GROUP BY sub.facid
+HAVING revenue <=1000"""
+
+[row for row in c.execute(q10_query)]
+
 /* Q11: Produce a report of members and who recommended them in alphabetic surname,firstname order */
 
-S
+q11_query = """SELECT m.surname, m.firstname, m.recommendedby AS recomender_id, r.surname, r.firstname
+FROM Members AS m
+LEFT JOIN Members AS r ON m.recommendedby = r.memid
+WHERE m.recommendedby !=0
+ORDER BY r.surname, r.firstname
+"""
+
+for row in c.execute(q11_query):
+    if row[3] != None:
+        print(row)
+
+
 /* Q12: Find the facilities with their usage by member, but not guests */
+
+q12_query = """SELECT b.facid, COUNT( b.memid ) AS mem_usage, f.name
+FROM (
+SELECT facid, memid
+FROM Bookings
+WHERE memid !=0
+) AS b
+LEFT JOIN Facilities AS f ON b.facid = f.facid
+GROUP BY b.facid"""
+
+[row for row in c.execute(q12_query)]
 
 
 /* Q13: Find the facilities usage by month, but not guests */
+
+q13_query ="""SELECT b.months, COUNT( b.memid ) AS mem_usage
+FROM (
+SELECT strftime('%m', starttime ) AS months, memid
+FROM Bookings
+WHERE memid !=0
+) AS b
+GROUP BY b.months"""
+
+[row for row in c.execute(q13_query)]
 
